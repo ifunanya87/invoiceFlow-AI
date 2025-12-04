@@ -53,3 +53,6 @@ coverage.xml
 # OS files
 .DS_Store
 Thumbs.db
+
+# Ignore docker commands helper file
+docker-commands

@@ -1,10 +1,26 @@
 [project]
 name = "invoiceflow-ai"
 version = "0.1.0"
-description = "Add your description here"
+description = "OCR and invoice parsing project"
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "fastapi>=0.123.4",
-    "uvicorn>=0.38.0",
+authors = [
+    { name="Ifunanya" }
 ]
+requires-python = "==3.12.*"
+
+dependencies = [
+    "paddleocr",
+    "paddlepaddle",
+    "pillow",
+    "numpy",
+    "pytesseract",
+    "pdfplumber",
+    "pypdf",
+    "langchain-openai",
+    "langchain-core",
+    "langchain-community",
+    "python-dotenv",
+]
+
+[tool.uv.extra-build-dependencies]
+invoiceflow-ai = ["uv"]

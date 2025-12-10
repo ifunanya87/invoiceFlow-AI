@@ -2,7 +2,7 @@ import argparse
 import os
 from typing import Any, Dict
 
-from src.services.logging_config import logger
+from src.utils.logging_config import logger
 
 from .factory import InvoiceExtractorFactory
 

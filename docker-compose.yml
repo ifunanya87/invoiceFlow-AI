@@ -1,0 +1,19 @@
+services:
+  invoice_ocr:
+    container_name: invoice-ocr
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: invoice-ocr:latest
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    volumes:
+      # Input invoice files
+      - ./data:/app/data
+      # Output folder for JSON results
+      - ./output:/app/output
+      # Logs folder
+      - ./logs:/app/logs
+    env_file:
+      - .env

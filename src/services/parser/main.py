@@ -6,8 +6,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List
 
-from src.services.logging_config import logger
 from src.services.ocr.main import process_invoice
+from src.utils.logging_config import logger
 
 from .factory import ParserFactory
 

@@ -1,0 +1,47 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+pycache/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+.env/
+.env.*
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# Git files
+.git/
+.gitignore
+
+# Docker files
+Dockerfile
+docker-compose.yml
+
+# OS/system files
+*.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+docs/
+
+# Large data folders (optional, if you have datasets you don't want in image)
+data/
+output/
+logs/
+
+# Ignore docker commands helper file
+docker-commands

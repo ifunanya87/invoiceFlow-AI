@@ -5,14 +5,20 @@ import numpy as np
 from paddleocr import PaddleOCR
 from PIL import Image
 
-from ..interface import BaseInvoiceExtractor
+from src.config import get_settings
+from src.models.models import OCRResult
 
+from ..interface import BaseInvoiceExtractor
+from .ocr_utils import paddleocr_to_df
+
+settings = get_settings()
 
 class PaddleOCRExtractor(BaseInvoiceExtractor):
     """Extractor for image invoices using PaddleOCR (robust to layout variations)."""
 
     def __init__(self, lang='en'):
         self.ocr_model = PaddleOCR(use_textline_orientation=True, lang=lang)
+        self.output_mode = settings.ocr.ocr_output_mode.lower()  # 'text' or 'table'
 
     def extract_data(self, source: Any) -> str:
         """
@@ -61,7 +67,7 @@ class PaddleOCRExtractor(BaseInvoiceExtractor):
 
 
             # Run OCR
-            result = self.ocr_model.predict(img_array)
+            result = self.ocr_model.predict(img_array)[0]
 
         except Exception as e:
             print(f"Error during PaddleOCR execution: {e}")
@@ -73,10 +79,13 @@ class PaddleOCRExtractor(BaseInvoiceExtractor):
                     "raw_text_length": 0}
 
 
-        # Safely parse OCR results
-        raw_text = "\n".join(result[0]['rec_texts'])
-
-        return raw_text
+        # Return based on toggle
+        if self.output_mode == "table":
+            tables = paddleocr_to_df(result)
+            return OCRResult(tables=tables, raw=result)
+        else:
+            text = "\n".join(result['rec_texts'])
+            return OCRResult(text=text, raw=result)
 
 
 # CLI for testing

@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List
 
+import numpy as np
+
 from src.services.ocr.main import process_invoice
 from src.utils.logging_config import logger
 
@@ -28,28 +30,45 @@ def run_parser(file_path: str, parser_name: str = "heuristic") -> Dict[str, Any]
 
     ocr_output = process_invoice(file_path)
 
-    if "error" in ocr_output:
-        logger.warning(f"OCR error for {file_path}: {ocr_output['error']}")
-        return {"error": ocr_output["error"]}
+    # Handle OCR errors
+    if ocr_output.error:
+        logger.warning(f"OCR error for {file_path}: {ocr_output.error}")
+        return {"error": ocr_output.error}
 
-    raw_text = ocr_output.get("raw_text")
-    if not raw_text:
-        logger.warning(f"OCR returned no text for {file_path}")
-        return {"error": "OCR returned no text."}
+    # Ensure there is content
+    if not ocr_output.text and not ocr_output.tables:
+        logger.warning(f"OCR returned no content for {file_path}")
+        return {"error": "OCR returned no text or tables."}
 
     parser = ParserFactory.get_parser(parser_name)
-    structured = parser.parse(raw_text)
+    structured = parser.parse(ocr_output)
 
-    logger.info(f"Parsed {file_path}: {len(raw_text)} characters extracted")
+    # Include raw OCR content length
+    raw_length = len(ocr_output.text) if ocr_output.text else 0
+    if ocr_output.tables is not None:
+        raw_length = len(str(ocr_output.tables))  # crude estimate for table content
+
+    logger.info(f"Parsed {file_path}: {raw_length} characters extracted")
 
     return {
-        "raw_data": raw_text,
-        "structured_data": structured
+        "ocr_result": ocr_output.model_dump(),
+        "structured_data": structured.model_dump(),
+        "raw_text_length": raw_length
     }
 
 
+
+# Helper for JSON serialization
+def _serialize(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return str(obj)
+
+
 # Batch parser
-def run_batch(path: str, parser_name: str = "heuristic", as_json: bool = True):
+def run_batch(path: str, parser_name: str = "heuristic", as_json: bool = True,
+    output_file: str = None, save_file: bool = True):
+
     logger.info(f"Starting batch processing for path: {path}")
 
     file_paths: List[str] = []
@@ -80,16 +99,21 @@ def run_batch(path: str, parser_name: str = "heuristic", as_json: bool = True):
             "file": os.path.basename(fp),
             "full_path": fp,
             "parser_used": parser_name,
-            "result": parsed
+            "ocr_result": parsed["ocr_result"],
+            "structured_data": parsed["structured_data"],
+            "raw_text_length": parsed.get("raw_text_length", 0)
         })
 
     # Save batch results to timestamped JSON
-    output_file = os.path.join(RESULT_FOLDER, f"results_{TIMESTAMP}.json")
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=4)
-    logger.info(f"Saved batch results to {output_file}")
+    if save_file:
+        if output_file is None:
+            output_file = os.path.join(RESULT_FOLDER, f"results_{TIMESTAMP}.json")
 
-    return json.dumps(results, indent=4) if as_json else results
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=4, default=_serialize)
+        logger.info(f"Saved batch results to {output_file}")
+
+    return results
 
 
 # CLI
@@ -102,15 +126,36 @@ def cli():
         default="heuristic",
         help="Parser to use: heuristic | llm"
     )
+
     parser.add_argument(
         "--json",
         action="store_true",
         help="Return output as formatted JSON"
     )
 
+    parser.add_argument(
+        "--no-save",
+        action="store_true",
+        help="Do not save results to file (useful for debugging)"
+    )
+
     args = parser.parse_args()
-    result = run_batch(args.path, args.parser_name, as_json=args.json)
-    print(result)
+
+    if not args.path:
+        parser.error("You must provide a path to a file/folder")
+
+    result = run_batch(
+        args.path,
+        args.parser_name,
+        as_json=args.json,
+        save_file=not args.no_save
+    )
+
+
+    if args.json:
+        print(json.dumps(result, indent=4, default=_serialize))
+    else:
+        print(result)
 
 
 # Entry point

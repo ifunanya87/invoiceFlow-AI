@@ -1,10 +1,11 @@
 import re
 from typing import Dict, Optional
 
-from ..interface import BaseParser, InvoiceData
+from src.models.models import InvoiceParseResult
+from src.services.parser.interface import BaseParser
 
 
-class HeuristicParser(BaseParser):
+class HeuristicTextParser(BaseParser):
     """
     Handles:
     - Invoice ID
@@ -16,25 +17,27 @@ class HeuristicParser(BaseParser):
     MIN_AMOUNT = 5
 
     # Main Parse
-    def parse(self, raw_text: str) -> InvoiceData:
-        if not raw_text:
-            return {
-                "error": "No text provided for parsing",
-                "invoice_id": None,
-                "total_amount": None,
-                "invoice_date": None,
-                "vendor_name": None,
-                "raw_text_length": 0,
-            }
+    def parse(self, raw_text: str) -> InvoiceParseResult:
 
-        return {
-            "error": None,
-            "invoice_id": self.extract_invoice_id(raw_text),
-            "total_amount": self.extract_total_amount(raw_text),
-            "invoice_date": self.extract_invoice_date(raw_text),
-            "vendor_name": self.extract_vendor(raw_text),
-            "raw_text_length": len(raw_text),
-        }
+        if not raw_text:
+            return InvoiceParseResult(
+                error="No text provided for parsing",
+                raw_text_length=0,
+            )
+
+
+        return InvoiceParseResult(
+            error=None,
+            invoice_id=self.extract_invoice_id(raw_text),
+            vendor_name=self.extract_vendor(raw_text),
+            invoice_date=self.extract_invoice_date(raw_text),
+            subtotal_amount=None,
+            tax_amount=None,
+            total_amount=self.extract_total_amount(raw_text),
+            summary=None,
+            raw_text_length=len(raw_text),
+        )
+
 
 
     # Invoice ID

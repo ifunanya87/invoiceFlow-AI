@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
 
-InvoiceData = Dict[str, Any]
+from src.models.models import InvoiceParseResult
+
 
 class BaseParser(ABC):
     """
@@ -9,6 +9,6 @@ class BaseParser(ABC):
     """
 
     @abstractmethod
-    def parse(self, raw_text: str) -> InvoiceData:
+    def parse(self, raw_text: str) -> InvoiceParseResult:
         """Convert raw OCR text into structured invoice fields."""
         pass
